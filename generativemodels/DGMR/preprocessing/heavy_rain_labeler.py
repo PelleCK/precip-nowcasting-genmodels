@@ -1,3 +1,4 @@
+from pathlib import Path
 import numpy as np
 from skimage import morphology
 import os
@@ -34,12 +35,12 @@ else:
 radar_dir = config_DGMR.dir_rtcor
 label_dir = config_DGMR.dir_labels_heavy
 
-root = radar_dir + year
+root = radar_dir / year
 files = sorted([name for path, subdirs, files in os.walk(root) for name in files])
 
 cluttermask = ~np.load('cluttermask.npy')
 
-path = config_DGMR.dir_rtcor + '2019/{}201901010000.h5'.format(config_DGMR.prefix_rtcor)
+path = config_DGMR.dir_rtcor / '2019/{}201901010000.h5'.format(config_DGMR.prefix_rtcor)
 with h5py.File(path, 'r') as f:
     rain = f['image1']['image_data'][:]
     mask = (rain == 65535)
