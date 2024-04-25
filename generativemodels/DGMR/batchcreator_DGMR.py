@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import tensorflow as tf
 from datetime import datetime, timedelta
@@ -231,12 +232,12 @@ class DataGenerator(tf.keras.utils.Sequence):
         
     def load_x(self, x_ID):
         if self.load_prep:
-            path = self.x_path + '{}.npy'.format(x_ID)
+            path = os.path.join(self.x_path, '{}.npy'.format(x_ID))
             x = np.load(path)
         else:
             dt = datetime.strptime(x_ID, '%Y%m%d%H%M')
-            path = self.x_path +  '{Y}/{m:02d}/{prefix}{ts}.h5'.format(Y=dt.year, m=dt.month, 
-                                                                       prefix = conf.prefix_rtcor,  ts=x_ID)
+            path = os.path.join(self.x_path,  '{Y}/{m:02d}/{prefix}{ts}.h5'.format(Y=dt.year, m=dt.month, 
+                                                                       prefix = conf.prefix_rtcor,  ts=x_ID))
             x = self.load_h5(path)   
         return x
         
@@ -244,7 +245,7 @@ class DataGenerator(tf.keras.utils.Sequence):
         if self.y_is_rtcor:
             y = self.load_x(y_ID)
         elif self.load_prep:
-            path = self.y_path + '{}.npy'.format(y_ID)
+            path = os.path.join(self.y_path, '{}.npy'.format(y_ID))
             y = np.load(path)
         '''else:
             year = y_ID[:4]
@@ -375,9 +376,9 @@ def get_list_IDs(start_dt, end_dt, x_seq_size=6, y_seq_size=1, filter_no_rain=No
 
         if filter_no_rain:
             try:
-                has_rain = all([np.load(label_dir+ '{}/{}.npy'.format(file[:4], file)) for file in xs])
+                has_rain = all([np.load(os.path.join(label_dir, '{}/{}.npy'.format(file[:4], file))) for file in xs])
             except Exception as e:
-                print(e)
+                print("NO RAIN\nexception: ", e)
                 has_rain = False
     
             if has_rain:
