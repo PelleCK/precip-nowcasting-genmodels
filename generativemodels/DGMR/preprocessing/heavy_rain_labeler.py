@@ -35,12 +35,12 @@ else:
 radar_dir = config_DGMR.dir_rtcor
 label_dir = config_DGMR.dir_labels_heavy
 
-root = radar_dir / year
+root = os.path.join(radar_dir.strip(), year.strip('/'))
 files = sorted([name for path, subdirs, files in os.walk(root) for name in files])
 
 cluttermask = ~np.load('cluttermask.npy')
 
-path = config_DGMR.dir_rtcor / '2019/{}201901010000.h5'.format(config_DGMR.prefix_rtcor)
+path = os.path.join(config_DGMR.dir_rtcor.strip(), '2019/{}201901010000.h5'.format(config_DGMR.prefix_rtcor).strip('/'))
 with h5py.File(path, 'r') as f:
     rain = f['image1']['image_data'][:]
     mask = (rain == 65535)
@@ -103,7 +103,7 @@ def make_dir(dir_name):
 
 # make directories
 make_dir(label_dir)
-make_dir(label_dir + year)
+make_dir(os.path.join(label_dir.strip(), year.strip('/')))
 #for m in range(1, 13):
 #    make_dir(label_dir + year + '/{:02d}'.format(m))
 
@@ -114,11 +114,11 @@ for f in tqdm(files):
     year = ts[:4]
     #month = ts[4:6]
 
-    label_fn = label_dir + '{Y}/{ts}.npy'.format(Y=year, ts=ts)
+    label_fn = os.path.join(label_dir.strip(), '{Y}/{ts}.npy'.format(Y=year, ts=ts).strip('/'))
 
     if not os.path.isfile(label_fn) or overwrite:
         try:
-            rdr = load_h5(radar_dir + '/{}/{}'.format(year, f))
+            rdr = load_h5(os.path.join(radar_dir.strip(), '/{}/{}'.format(year, f).strip('/')))
             rainy = is_rainy(rdr)
         except Exception as e:
             rainy = False
