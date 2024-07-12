@@ -10,6 +10,6 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=pelle.kools@ru.nl
 
-source /vol/knmimo-nobackup/users/pkools/thesis-forecasting/precip-nowcasting-genmodels/.dgmr-venv/bin/activate
+source /vol/knmimo-nobackup/restore/knmimo/thesis_pelle/.dgmr-venv/bin/activate
 
 srun python preprocessing/generate_sequence_data.py

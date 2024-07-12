@@ -7,6 +7,6 @@
 #SBATCH --output=./logs/basicrun-%j.out
 #SBATCH --error=./logs/basicrun-%j.err
 
-source ../../.dgmr-venv/bin/activate
+source /vol/knmimo-nobackup/restore/knmimo/thesis_pelle/.dgmr-venv/bin/activate
 python basic_run_pelle.py
 
