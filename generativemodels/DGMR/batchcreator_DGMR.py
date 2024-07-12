@@ -2,10 +2,8 @@ import os
 import numpy as np
 import tensorflow as tf
 from datetime import datetime, timedelta
-
-import numpy as np
-import tensorflow as tf
 import h5py
+from tqdm import tqdm
 from netCDF4 import Dataset
 import config_DGMR as conf
 
@@ -321,7 +319,7 @@ def undo_prep(x, norm_method='minmax', r_to_dbz=True, downscale256=True, resize_
         # Upsample the image using bilinear interpolation
         x =  tf.convert_to_tensor([tf.image.resize(img, (768, 768), method=resize_method) for img in x])
         # Original shape was 765x700, crop prediction so that it fits this
-        x = x[:,:,:-3, :-68]
+        x = x[:, :-3,:-68, :]
     return x
 
 def r_to_dbz(r):
@@ -365,23 +363,24 @@ def get_list_IDs(start_dt, end_dt, x_seq_size=6, y_seq_size=1, filter_no_rain=No
     elif filter_no_rain:
         print('Error: unkown filter_no_rain argument {}. Options are \'sum30mm\' and \'avg0.01mm\'. ')
         print('Setting filtering to \'sum30mm\''.format(filter_no_rain))
-        label_dir = label_dir = conf.dir_labels
+        label_dir = conf.dir_labels
         
     # Create list of IDs to retrieve
     dts = np.arange( start_dt, end_dt, timedelta(minutes=5*x_seq_size)).astype(datetime)
     # Convert to filenames
     list_IDs = []
-    for dt in dts:
+    for dt in tqdm(dts, desc="Creating list of IDs"):
         list_ID = xs, ys =  get_filenames_xy(dt,x_seq_size,y_seq_size, y_interval)
 
         if filter_no_rain:
             try:
-                has_rain = all([np.load(os.path.join(label_dir, '{}/{}.npy'.format(file[:4], file))) for file in xs])
+                has_rain_x = all([np.load(os.path.join(label_dir, '{}/{}.npy'.format(file[:4], file))) for file in xs])
+                has_rain_y = all([np.load(os.path.join(label_dir, '{}/{}.npy'.format(file[:4], file))) for file in ys])
             except Exception as e:
                 print("NO RAIN\nexception: ", e)
-                has_rain = False
+                has_rain_x = has_rain_y = False
     
-            if has_rain:
+            if has_rain_x and has_rain_y:
                 list_IDs.append(list_ID)
         else:
             list_IDs.append(list_ID)
@@ -402,7 +401,7 @@ def get_filenames_xy(dt, x_size=6, y_size=1, y_interval = 5):
         dt_i = dt - i*timedelta(minutes=5) - timedelta(minutes=y_interval)
         ts = '{:%Y%m%d%H%M}'.format(dt_i)
         xs.append(ts)
-        
+   
     ys = []
     for i in range(0,y_size,1):
         dt_i = dt + i * timedelta(minutes=y_interval)
