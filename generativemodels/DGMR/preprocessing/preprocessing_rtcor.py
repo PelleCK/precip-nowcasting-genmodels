@@ -1,3 +1,7 @@
+import sys
+sys.path.append('/vol/knmimo-nobackup/users/pkools/thesis-forecasting/precip-nowcasting-genmodels/generativemodels/DGMR/')
+
+
 from batchcreator_DGMR import minmax
 from batchcreator_DGMR import DataGenerator as dg
 import config_DGMR as config
@@ -32,7 +36,7 @@ def load_h5(file_path):
     return radar_img
 
 
-def rtcor2npy(in_dir, out_dir, year=None, label_dir=None, preprocess=False, overwrite=False, filenames=None):
+def rtcor2npy(out_dir, year=None, label_dir=None, preprocess=False, overwrite=False, filenames=None):
     '''
     Preprocess the h5 file into numpy arrays.
     The timestamp, image1 and image2 data of each file is stored
@@ -45,15 +49,21 @@ def rtcor2npy(in_dir, out_dir, year=None, label_dir=None, preprocess=False, over
         # Add file extension to filename
         # Add a prefix to filename
         add_file_extension = '.h5'
-        prefix = config.prefix_rtcor
+        # prefix = config.prefix_rtcor
     else:
+        in_dir = config.dir_rtcor
+        if int(year) > 2018:
+            prefix = config.prefix_rtcor_recent
+        else:
+            prefix = config.prefix_rtcor_archive
+
         d = in_dir + str(year)
         filenames = []
         for m in os.listdir(d):
             dir_m = os.path.join(d, m)
             if os.path.isdir(dir_m):
                 for f in os.listdir(dir_m):
-                    if f.endswith('.h5') and f.startswith(config.prefix_rtcor + str(year)):
+                    if f.endswith('.h5') and f.startswith(prefix + str(year)):
                         filenames.append(f)
         filenames = sorted(filenames)
 
@@ -72,7 +82,17 @@ def rtcor2npy(in_dir, out_dir, year=None, label_dir=None, preprocess=False, over
         timestamp = regex_file.findall(filename)[0]
         scan_fn = out_dir + '/' + "{}.npy".format(timestamp)
         year = timestamp[0:4]
-        path_scan = in_dir + str(year) + '/' + prefix + filename
+
+        in_dir = config.dir_rtcor
+        if int(year) > 2018:
+            prefix = config.prefix_rtcor_recent
+            # print(f"\n\nProcessing file {filename} from {in_dir} with prefix {prefix}\n\n")
+        else:
+            prefix = config.prefix_rtcor_archive
+            # print(f"\n\nProcessing file {filename} from {in_dir} with prefix {prefix}\n\n")
+            # break
+
+        path_scan = in_dir + '/' + str(year) + '/' + prefix + filename
 
         if not overwrite and timestamp + '.npy' in output_files:
             # Skip this file if already processed,
