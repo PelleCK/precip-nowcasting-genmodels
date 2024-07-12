@@ -1,11 +1,14 @@
 from pathlib import Path
 import numpy as np
 from skimage import morphology
+import sys
 import os
 from os import listdir
 from os.path import isfile, join
 from tqdm import tqdm
 import h5py
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import config_DGMR
 
 import sys
@@ -32,7 +35,11 @@ else:
     print('Missing argument year (example: rainyday_labeler.py 2019)')
     exit()
 
-radar_dir = config_DGMR.dir_rtcor
+if year < 2019:
+    radar_dir = config_DGMR.dir_rtcor_archive
+else:
+    radar_dir = config_DGMR.dir_rtcor_recent
+    
 label_dir = config_DGMR.dir_labels_heavy
 
 root = os.path.join(radar_dir.strip(), year.strip('/'))
