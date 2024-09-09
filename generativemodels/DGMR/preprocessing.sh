@@ -4,7 +4,7 @@
 #SBATCH --qos=csedu-large
 #SBATCH --mem=2G
 #SBATCH --time=24:00:00
-#SBATCH --job-name=preprocess_all_data
+#SBATCH --job-name=preprocess_24seqs_200824_fixed_mask
 #SBATCH --output=/vol/knmimo-nobackup/users/pkools/thesis-forecasting/data/logs/%x-%j.out
 #SBATCH --error=/vol/knmimo-nobackup/users/pkools/thesis-forecasting/data/logs/%x-%j.err
 #SBATCH --mail-type=ALL
