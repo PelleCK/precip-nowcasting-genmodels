@@ -18,11 +18,16 @@ from tqdm import tqdm
 # fn_rtcor_val = np.load(dir_val_IDs, allow_pickle = True)
 # fn_rtcor_test = np.load(dir_test_IDs, allow_pickle = True)
 
-dir_all_ids = config_DGMR.dir_basic_IDs
+# dir_all_ids = config_DGMR.dir_basic_IDs
+analysis_folder = os.path.join(config_DGMR.PROJECT_FOLDER, "data/analysis")
+#TODO: specify the folder where the list of all sequences is stored (fixed mask)
+dir_all_sequences = os.path.join(analysis_folder, todo)
 
 # filenames_rtcor = np.append(fn_rtcor_train, fn_rtcor_val) # , fn_rtcor_test)
-filenames_rtcor = np.load(dir_all_ids, allow_pickle = True).ravel()
+filenames_rtcor = np.load(dir_all_sequences, allow_pickle = True).ravel()
 filenames_rtcor = [item for sublist in filenames_rtcor for item in sublist]
+# only unique filenames
+filenames_rtcor = np.unique(filenames_rtcor)
 
 # #print((filenames_rtcor[0]))
 print(f"Total number of listedID radar images: {len(filenames_rtcor)}")
@@ -45,4 +50,4 @@ print(len(np.setdiff1d(np.array(filenames_rtcor), np.array(files_prep))))
 #print(len(np.setdiff1d(np.array(files_prep), np.array(filenames_rtcor))))
 print((np.setdiff1d(np.array(filenames_rtcor), np.array(files_prep))))
 
-np.save(os.path.join(config_DGMR.PROJECT_FOLDER, 'data/listIDs_all_prepped_20082022.npy'), files_prep)
+np.save(os.path.join(config_DGMR.PROJECT_FOLDER, 'data/listIDs_24seq_prepped_20082024_fixed_mask.npy'), files_prep)
