@@ -11,8 +11,6 @@ import h5py
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import config_DGMR
 
-import sys
-
 # Get full command-line arguments
 full_cmd_arguments = sys.argv
 
@@ -35,23 +33,27 @@ else:
     print('Missing argument year (example: rainyday_labeler.py 2019)')
     exit()
 
-if year < 2019:
-    radar_dir = config_DGMR.dir_rtcor_archive
+if int(year) < 2019:
+    radar_dir = config_DGMR.dir_rtcor
+    prefix = config_DGMR.prefix_rtcor_archive
 else:
     radar_dir = config_DGMR.dir_rtcor_recent
+    prefix = config_DGMR.prefix_rtcor_recent
     
-label_dir = config_DGMR.dir_labels_heavy
+# label_dir = config_DGMR.dir_labels_heavy
+label_dir = config_DGMR.temp_double_mask_label_dir
 
-root = os.path.join(radar_dir.strip(), year.strip('/'))
+root = os.path.join(radar_dir, year)
 files = sorted([name for path, subdirs, files in os.walk(root) for name in files])
 
 cluttermask = ~np.load('cluttermask.npy')
 
-path = os.path.join(config_DGMR.dir_rtcor.strip(), '2019/{}201901010000.h5'.format(config_DGMR.prefix_rtcor).strip('/'))
+path = os.path.join(config_DGMR.dir_rtcor_recent, '2019/{}201901010000.h5'.format(config_DGMR.prefix_rtcor_recent))
 with h5py.File(path, 'r') as f:
     rain = f['image1']['image_data'][:]
-    mask = (rain == 65535)
-nr_unmasked_pixels = (765 * 700) - np.sum(mask)  # +~cluttermask)
+    DEFAULT_OLD_MASK = (rain == 65535)
+# nr_unmasked_pixels = (765 * 700) - np.sum(DEFAULT_MASK)  # +~cluttermask)
+# nr_unmasked_pixels = np.sum(DEFAULT_MASK)
 
 
 def has_clutter(rdr):
@@ -64,7 +66,7 @@ def has_clutter(rdr):
     return abnormal_pixels > 50
 
 
-def is_rainy(rdr):
+def is_rainy(rdr, nr_unmasked_pixels):
     # Label as rainy
     # If not many high gradients (clutter) and avg > 0.01mm
     avg_rain = np.sum(rdr) / nr_unmasked_pixels
@@ -75,30 +77,41 @@ def is_rainy(rdr):
     return False
 
 
-def load_h5(path):
+def load_h5(path, radar7_extra_mask=True):
     '''
     The orginial input images are stored in .h5 files.
     This function loads them and converts them to numpy arrays
     '''
     radar_img = None
+    nr_unmasked_pixels = 0
     with h5py.File(path, 'r') as f:
         try:
             radar_img = f['image1']['image_data'][:]
 
             ## Set pixels out of image to 0
             out_of_image = f['image1']['calibration'].attrs['calibration_out_of_image']
-            radar_img[radar_img == out_of_image] = 0
+            mask_ooi = (radar_img == out_of_image)
+            
             # Sometimes 255 or other number (244) is used for the calibration
             # for out of image values, so also check the first pixel
-            radar_img[radar_img == radar_img[0][0]] = 0
+            mask_first_pixel = (radar_img == radar_img[0][0])
+            mask = np.logical_or(mask_ooi, mask_first_pixel)
+
+            if radar7_extra_mask and 'radar7' in f.keys():
+                mask = np.logical_or(mask, DEFAULT_OLD_MASK)
+
+            radar_img[mask] = 0
 
             # Convert the values to mm/h (from 0.01mm/5min)
             radar_img = (radar_img / 100) * 12
             radar_img = np.clip(radar_img, 0, 100)
+
+            # Calculate the total number of unmasked pixels
+            # mask = (radar_img == 0)
+            nr_unmasked_pixels = np.sum(~mask)
         except:
             print("Error: could not read image1 data, file {}".format(path))
-    return radar_img
-
+    return radar_img, nr_unmasked_pixels
 
 def make_dir(dir_name):
     '''
@@ -110,23 +123,23 @@ def make_dir(dir_name):
 
 # make directories
 make_dir(label_dir)
-make_dir(os.path.join(label_dir.strip(), year.strip('/')))
+make_dir(os.path.join(label_dir, year))
 #for m in range(1, 13):
 #    make_dir(label_dir + year + '/{:02d}'.format(m))
 
 for f in tqdm(files):
-    ts = f.replace(config_DGMR.prefix_rtcor, '')
+    ts = f.replace(prefix, '')
     ts = ts.replace('.h5', '')
 
     year = ts[:4]
     #month = ts[4:6]
 
-    label_fn = os.path.join(label_dir.strip(), '{Y}/{ts}.npy'.format(Y=year, ts=ts).strip('/'))
+    label_fn = os.path.join(label_dir, '{Y}/{ts}.npy'.format(Y=year, ts=ts))
 
     if not os.path.isfile(label_fn) or overwrite:
         try:
-            rdr = load_h5(os.path.join(radar_dir.strip(), '/{}/{}'.format(year, f).strip('/')))
-            rainy = is_rainy(rdr)
+            rdr, nr_unmasked_pixels = load_h5(os.path.join(radar_dir, '{}/{}'.format(year, f)), radar7_extra_mask=True)
+            rainy = is_rainy(rdr, nr_unmasked_pixels)
         except Exception as e:
             rainy = False
             print(e)

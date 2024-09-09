@@ -341,7 +341,7 @@ def tf_log10(x):
     denominator = tf.math.log(tf.constant(10, dtype=numerator.dtype))
     return numerator / denominator
 
-def get_list_IDs(start_dt, end_dt, x_seq_size=6, y_seq_size=1, filter_no_rain=None, y_interval = 5):
+def get_list_IDs(start_dt, end_dt, x_seq_size=6, y_seq_size=1, filter_no_rain=None, mask_strategy=None, y_interval = 5):
     '''
     This function returns filenames between the a starting date and end date. 
     The filenames are packed into input and output arrays.
@@ -364,6 +364,17 @@ def get_list_IDs(start_dt, end_dt, x_seq_size=6, y_seq_size=1, filter_no_rain=No
         print('Error: unkown filter_no_rain argument {}. Options are \'sum30mm\' and \'avg0.01mm\'. ')
         print('Setting filtering to \'sum30mm\''.format(filter_no_rain))
         label_dir = conf.dir_labels
+
+    if mask_strategy == 'single_mask':
+        label_dir_recent = conf.temp_single_mask_label_dir
+    elif mask_strategy == 'double_mask':
+        label_dir_recent = conf.temp_double_mask_label_dir
+        # check if label_dir_recent exists, give error if not
+        if not os.path.exists(label_dir_recent):
+            print("Error: label_dir_recent does not exist. Check if the correct mask strategy is used.")
+            
+
+    switched_label_dir = False
         
     # Create list of IDs to retrieve
     dts = np.arange( start_dt, end_dt, timedelta(minutes=5*x_seq_size)).astype(datetime)
@@ -371,6 +382,9 @@ def get_list_IDs(start_dt, end_dt, x_seq_size=6, y_seq_size=1, filter_no_rain=No
     list_IDs = []
     for dt in tqdm(dts, desc="Creating list of IDs"):
         list_ID = xs, ys =  get_filenames_xy(dt,x_seq_size,y_seq_size, y_interval)
+        if (not switched_label_dir) and (dt.year >= 2023):
+            label_dir = label_dir_recent
+            switched_label_dir = True
 
         if filter_no_rain:
             try:

@@ -19,13 +19,13 @@ def main(start_date, end_date, x_length, y_length, filter_no_rain, given_filenam
     filename_npy = f'list_IDs_{start_dt.year}{str(end_dt.year)[2:]}_{filter_no_rain.replace(".", "")}_{x_length}x{y_length}y_{given_filename}.npy'
 
     if analysis:
-        filename = os.path.join(config_DGMR.path_code, f'data/analysis/{filename_npy}')
+        filename = os.path.join(config_DGMR.path_code, f'data/analysis/splits/{filename_npy}')
     else:
         filename = os.path.join(config_DGMR.path_code, f'data/{filename_npy}')
 
     print(f"Retrieve IDs")
 
-    list_IDs = get_list_IDs(start_dt, end_dt, x_length, y_length, filter_no_rain=filter_no_rain)
+    list_IDs = get_list_IDs(start_dt, end_dt, x_length, y_length, filter_no_rain=filter_no_rain, mask_strategy='double_mask')
     print(f"Number of IDs: {len(list_IDs)}")
     #print("Result of IDs:")
     #print(list_IDs)
